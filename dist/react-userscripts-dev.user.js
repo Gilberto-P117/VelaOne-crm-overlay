@@ -22,8 +22,10 @@ async function main() {
         return;
     }
     log("Got Dev script");
-    eval(script);
-    log("Dev script evaled");
+    const scriptEl = document.createElement('script');
+    scriptEl.textContent = script;
+    document.documentElement.appendChild(scriptEl);
+    log("Dev script loaded");
 }
 
 // Make sure we run once at the start

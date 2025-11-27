@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
                 name: "userscript",
                 fileName: (_format) => `react-userscripts.user.js`,
                 formats: ["iife"],
+                cssFileName: "index.css",
             },
             rollupOptions: {
                 output: {
@@ -30,6 +31,11 @@ export default defineConfig(({ mode }) => {
         preview: {
             port: 8124,
             strictPort: true,
+            cors: true,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET',
+            },
         },
         define: {
             // Don't pick up weird variables from `NODE_ENV`
