@@ -7090,16 +7090,40 @@
         return state;
     }
   }
+  function getFirstIframeDocument() {
+    const iframe = document.querySelector("iframe");
+    return iframe?.contentDocument || iframe?.contentWindow?.document || null;
+  }
+  function getDataIdValueFromDocument(rootDocument, selector) {
+    const element = rootDocument?.querySelector(selector);
+    return element?.dataset?.idValue || null;
+  }
+  function getDataIdValuesFromIframe(fieldSelectors) {
+    const iframeDocument = getFirstIframeDocument();
+    return Object.entries(fieldSelectors).reduce((result, [key, selector]) => {
+      result[key] = getDataIdValueFromDocument(iframeDocument, selector);
+      return result;
+    }, {});
+  }
+  const QUOTE_RELATED_RECORD_SELECTORS = {
+    billingAccountId: "#billing_account_id",
+    corporateAccountId: "#c1183_corporate_accounts_id_c",
+    billingContactId: "#billing_contact_id"
+  };
+  function getQuoteRelatedRecordIdsFromIframe() {
+    const result = getDataIdValuesFromIframe(QUOTE_RELATED_RECORD_SELECTORS);
+    console.log(result);
+  }
   const routeStateViews = {
     home: {
       list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Home Helper"), /* @__PURE__ */ React.createElement("p", null, "Home route is active."))
     },
     quotes: {
       list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Quotes List Helper"), /* @__PURE__ */ React.createElement("p", null, "Quotes list view is active.")),
-      record: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Quote Record Helper"), /* @__PURE__ */ React.createElement("p", null, "Quote Record ID: ", routeState.recordId)),
-      edit: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Quote Edit Helper"), /* @__PURE__ */ React.createElement("p", null, "Editing Quote ID: ", routeState.recordId), /* @__PURE__ */ React.createElement("div", { className: "get_address_from_account_field", onClick: () => {
-        console.log("Quote Edit Route State");
-      } }, /* @__PURE__ */ React.createElement("span", null, "Get Account Address")))
+      record: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Quote Record Helper"), /* @__PURE__ */ React.createElement("p", null, "Quote Record ID: ", routeState.recordId), /* @__PURE__ */ React.createElement("button", { className: "get_address_from_account_field", onClick: () => {
+        getQuoteRelatedRecordIdsFromIframe();
+      } }, /* @__PURE__ */ React.createElement("span", null, "Get Account Address"))),
+      edit: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Quote Edit Helper"), /* @__PURE__ */ React.createElement("p", null, "Editing Quote ID: ", routeState.recordId))
     },
     invoices: {
       list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Invoices List Helper"), /* @__PURE__ */ React.createElement("p", null, "Invoices list view is active.")),
@@ -7289,7 +7313,7 @@
 ;
 (function(){
                     const el = document.createElement("style");
-                    el.innerText = "/* body {\r\n  margin: 0;\r\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Roboto\", \"Oxygen\",\r\n    \"Ubuntu\", \"Cantarell\", \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\",\r\n    sans-serif;\r\n  -webkit-font-smoothing: antialiased;\r\n  -moz-osx-font-smoothing: grayscale;\r\n  z-index:9999;\r\n\r\n} */\r\n\r\n#vela-crm-react-root {\r\n  position: fixed;\r\n  /* right: 24px;\r\n  bottom: 24px; */\r\n  z-index: 9999;\r\n  font-family: system-ui, sans-serif;\r\n}.velaone_dashboard_overlay_app {    \r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: row;\r\n    justify-content: center;\r\n    top:0;\r\n    left:calc(100% - 500px);\r\n    width: 500px;\r\n    height: 500px;\r\n    z-index: 9999;\r\n    top: 50%;\r\n    transform: translateY(-50%);\r\n}\r\n\r\n.app_body_container {\r\n    position: relative;\r\n    width: inherit;\r\n    height: inherit;\r\n    background-color: lightskyblue;\r\n}\r\n\r\n.module_helper_container {\r\n    position: relative;\r\n    width: 100%;\r\n    height: auto;\r\n    background-color: lightgreen;\r\n}\r\n\r\n.get_address_from_account_field {\r\n    position: relative;\r\n    display:flex;\r\n    justify-content: center;\r\n    width: 165px;\r\n    height: 1.5rem;\r\n    background-color: orange;\r\n    border-radius: 5px;\r\n    cursor: pointer;\r\n\r\n    span {\r\n        align-self: center;\r\n    }\r\n}";
+                    el.innerText = "/* body {\r\n  margin: 0;\r\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Roboto\", \"Oxygen\",\r\n    \"Ubuntu\", \"Cantarell\", \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\",\r\n    sans-serif;\r\n  -webkit-font-smoothing: antialiased;\r\n  -moz-osx-font-smoothing: grayscale;\r\n  z-index:9999;\r\n\r\n} */\r\n\r\n#vela-crm-react-root {\r\n  position: fixed;\r\n  /* right: 24px;\r\n  bottom: 24px; */\r\n  z-index: 9999;\r\n  font-family: system-ui, sans-serif;\r\n}.velaone_dashboard_overlay_app {    \r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: row;\r\n    justify-content: center;\r\n    top:0;\r\n    left:calc(100% - 325px);\r\n    width: 325px;\r\n    height: 500px;\r\n    z-index: 9999;\r\n    top: 50%;\r\n    transform: translateY(-50%);\r\n}\r\n\r\n.app_body_container {\r\n    position: relative;\r\n    width: inherit;\r\n    height: inherit;\r\n    background-color: lightskyblue;\r\n}\r\n\r\n.module_helper_container {\r\n    position: relative;\r\n    width: 100%;\r\n    height: auto;\r\n    background-color: lightgreen;\r\n}\r\n\r\n.get_address_from_account_field {\r\n    position: relative;\r\n    display:flex;\r\n    padding: 0;\r\n    justify-content: center;\r\n    width: 165px;\r\n    height: 1.5rem;\r\n    background-color: orange;\r\n    border-radius: 5px;\r\n    cursor: pointer;\r\n\r\n    span {\r\n        align-self: center;\r\n        width: 100%;\r\n    }\r\n}";
                     el.type = "text/css";
                     document.head.appendChild(el);
                 })();

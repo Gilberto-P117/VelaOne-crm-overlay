@@ -4,8 +4,8 @@
     flex-direction: row;
     justify-content: center;
     top:0;
-    left:calc(100% - 500px);
-    width: 500px;
+    left:calc(100% - 325px);
+    width: 325px;
     height: 500px;
     z-index: 9999;
     top: 50%;
@@ -29,6 +29,7 @@
 .get_address_from_account_field {
     position: relative;
     display:flex;
+    padding: 0;
     justify-content: center;
     width: 165px;
     height: 1.5rem;
@@ -38,5 +39,6 @@
 
     span {
         align-self: center;
+        width: 100%;
     }
 }

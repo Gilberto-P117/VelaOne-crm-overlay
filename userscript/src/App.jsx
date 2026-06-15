@@ -187,6 +187,49 @@ function routeStateReducer(state, action) {
     }
 }
 
+
+//Quote/Invoice Specific Functions
+
+// Generic iframe helper
+function getFirstIframeDocument() {
+    const iframe = document.querySelector("iframe");
+  
+    return iframe?.contentDocument || iframe?.contentWindow?.document || null;
+}
+
+// Generic data-id-value reader
+function getDataIdValueFromDocument(rootDocument, selector) {
+    const element = rootDocument?.querySelector(selector);
+  
+    return element?.dataset?.idValue || null;
+}
+
+// Generic helper for reading multiple fields from an iframe
+function getDataIdValuesFromIframe(fieldSelectors) {
+    const iframeDocument = getFirstIframeDocument();
+  
+    return Object.entries(fieldSelectors).reduce((result, [key, selector]) => {
+      result[key] = getDataIdValueFromDocument(iframeDocument, selector);
+      return result;
+    }, {});
+};
+
+const QUOTE_RELATED_RECORD_SELECTORS = {
+    billingAccountId: "#billing_account_id",
+    corporateAccountId: "#c1183_corporate_accounts_id_c",
+    billingContactId: "#billing_contact_id",
+};
+
+
+function getQuoteRelatedRecordIdsFromIframe() {
+    const result = getDataIdValuesFromIframe(QUOTE_RELATED_RECORD_SELECTORS);
+
+    console.log(result);
+}
+
+
+
+
 const routeStateViews = {
     home: {
         list: () => (
@@ -208,15 +251,15 @@ const routeStateViews = {
             <section className="route_helper_panel">
                 <h3>Quote Record Helper</h3>
                 <p>Quote Record ID: {routeState.recordId}</p>
+                <button className="get_address_from_account_field" onClick={()=>{getQuoteRelatedRecordIdsFromIframe()}}>
+                    <span>Get Account Address</span>
+                </button>
             </section>
         ),
         edit: (routeState) => (
             <section className="route_helper_panel">
                 <h3>Quote Edit Helper</h3>
                 <p>Editing Quote ID: {routeState.recordId}</p>
-                <div className="get_address_from_account_field" onClick={()=>{console.log("Quote Edit Route State")}}>
-                    <span>Get Account Address</span>
-                </div>
             </section>
         ),
     },
