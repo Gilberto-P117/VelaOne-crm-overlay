@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name     React Userscripts
-// @namespace https://github.com/siefkenj/react-userscripts
+// @namespace http://tampermonkey.net/
+// @match        https://connect.vela1.com/crm/*
 // @version  1.1
-// @description A sample userscript built using react
-// @include https://*.google.com*
+// @description Loads local React overlay for SuiteCRM development
 // @grant    none
 // ==/UserScript==
 
@@ -6964,17 +6964,221 @@
     return client;
   }
   var clientExports = requireClient();
+  const LOCATION_CHANGE_EVENT = "velaone-location-change";
+  const CRM_MODULES = [
+    "home",
+    "quotes",
+    "invoices",
+    "accounts",
+    "leads",
+    "contacts",
+    "cases",
+    "V7117_logistics_order_tickets"
+  ];
+  const RETURN_MODULE_MAP = {
+    AOS_Quotes: "quotes",
+    AOS_Invoices: "invoices",
+    Accounts: "accounts",
+    Leads: "leads",
+    Contacts: "contacts",
+    Cases: "cases",
+    V7117_logistics_order_tickets: "V7117_logistics_order_tickets"
+  };
+  const ROUTE_VIEW = {
+    LIST: "list",
+    RECORD: "record",
+    EDIT: "edit",
+    UNKNOWN: "unknown"
+  };
+  const ROUTE_ACTION = {
+    ROUTE_CHANGED: "ROUTE_CHANGED"
+  };
+  const initialRouteState = {
+    module: null,
+    view: ROUTE_VIEW.UNKNOWN,
+    recordId: null,
+    routeModule: null,
+    returnModule: null,
+    rawPath: "",
+    rawUrl: window.location.href
+  };
+  function normalizeModuleName(value) {
+    if (!value) return null;
+    const matchedModule = CRM_MODULES.find((moduleName) => {
+      return moduleName.toLowerCase() === value.toLowerCase();
+    });
+    return matchedModule || null;
+  }
+  function normalizeReturnModule(value) {
+    if (!value) return null;
+    return RETURN_MODULE_MAP[value] || normalizeModuleName(value);
+  }
+  function getHashRouteParts(url = window.location.href) {
+    const parsedUrl = new URL(url);
+    let hash = parsedUrl.hash || "";
+    hash = hash.replace(/^#\/?/, "");
+    const [pathPart, hashQueryPart = ""] = hash.split("?");
+    const path = `/${pathPart}`.replace(/\/+/g, "/");
+    const segments = pathPart.split("/").filter(Boolean);
+    const params = new URLSearchParams(hashQueryPart);
+    return {
+      path,
+      segments,
+      params
+    };
+  }
+  function getRouteStateFromURL(url = window.location.href) {
+    const { path, segments, params } = getHashRouteParts(url);
+    const routeModuleSegment = segments[0] || null;
+    const viewSegment = segments[1] || null;
+    const possibleRecordId = segments[2] || null;
+    const routeModule = normalizeModuleName(routeModuleSegment);
+    const returnModule = normalizeReturnModule(params.get("return_module"));
+    let detectedModule = routeModule;
+    let detectedView = ROUTE_VIEW.UNKNOWN;
+    let recordId = null;
+    if (!routeModuleSegment) {
+      return {
+        module: null,
+        view: ROUTE_VIEW.UNKNOWN,
+        recordId: null,
+        routeModule: null,
+        returnModule,
+        rawPath: path,
+        rawUrl: url
+      };
+    }
+    if (viewSegment?.toLowerCase() === "index") {
+      detectedModule = returnModule || routeModule;
+      detectedView = ROUTE_VIEW.LIST;
+    } else if (viewSegment?.toLowerCase() === "record") {
+      detectedModule = routeModule;
+      detectedView = ROUTE_VIEW.RECORD;
+      recordId = possibleRecordId || null;
+    } else if (viewSegment?.toLowerCase() === "edit") {
+      detectedModule = returnModule || routeModule;
+      detectedView = ROUTE_VIEW.EDIT;
+      recordId = possibleRecordId || null;
+    } else if (routeModule === "V7117_logistics_order_tickets" && !viewSegment) {
+      detectedModule = routeModule;
+      detectedView = ROUTE_VIEW.LIST;
+    } else if (routeModule === "home") {
+      detectedModule = "home";
+      detectedView = ROUTE_VIEW.LIST;
+    }
+    return {
+      module: detectedModule,
+      view: detectedView,
+      recordId,
+      routeModule,
+      returnModule,
+      rawPath: path,
+      rawUrl: url
+    };
+  }
+  function routeStateReducer(state, action) {
+    switch (action.type) {
+      case ROUTE_ACTION.ROUTE_CHANGED: {
+        const nextRouteState = action.payload;
+        const routeDidNotChange = state.module === nextRouteState.module && state.view === nextRouteState.view && state.recordId === nextRouteState.recordId && state.rawUrl === nextRouteState.rawUrl;
+        if (routeDidNotChange) {
+          return state;
+        }
+        return nextRouteState;
+      }
+      default:
+        return state;
+    }
+  }
+  const routeStateViews = {
+    home: {
+      list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Home Helper"), /* @__PURE__ */ React.createElement("p", null, "Home route is active."))
+    },
+    quotes: {
+      list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Quotes List Helper"), /* @__PURE__ */ React.createElement("p", null, "Quotes list view is active.")),
+      record: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Quote Record Helper"), /* @__PURE__ */ React.createElement("p", null, "Quote Record ID: ", routeState.recordId)),
+      edit: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Quote Edit Helper"), /* @__PURE__ */ React.createElement("p", null, "Editing Quote ID: ", routeState.recordId), /* @__PURE__ */ React.createElement("div", { className: "get_address_from_account_field", onClick: () => {
+        console.log("Quote Edit Route State");
+      } }, /* @__PURE__ */ React.createElement("span", null, "Get Account Address")))
+    },
+    invoices: {
+      list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Invoices List Helper"), /* @__PURE__ */ React.createElement("p", null, "Invoices list view is active.")),
+      record: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Invoice Record Helper"), /* @__PURE__ */ React.createElement("p", null, "Invoice Record ID: ", routeState.recordId)),
+      edit: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Invoice Edit Helper"), /* @__PURE__ */ React.createElement("p", null, "Editing Invoice ID: ", routeState.recordId))
+    },
+    accounts: {
+      list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Accounts List Helper"), /* @__PURE__ */ React.createElement("p", null, "Accounts list view is active.")),
+      record: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Account Record Helper"), /* @__PURE__ */ React.createElement("p", null, "Account Record ID: ", routeState.recordId))
+    },
+    leads: {
+      list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Leads List Helper"), /* @__PURE__ */ React.createElement("p", null, "Leads list view is active.")),
+      record: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Lead Record Helper"), /* @__PURE__ */ React.createElement("p", null, "Lead Record ID: ", routeState.recordId))
+    },
+    contacts: {
+      list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Contacts List Helper"), /* @__PURE__ */ React.createElement("p", null, "Contacts list view is active.")),
+      record: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Contact Record Helper"), /* @__PURE__ */ React.createElement("p", null, "Contact Record ID: ", routeState.recordId))
+    },
+    cases: {
+      list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Cases List Helper"), /* @__PURE__ */ React.createElement("p", null, "Cases list view is active.")),
+      record: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Case Record Helper"), /* @__PURE__ */ React.createElement("p", null, "Case Record ID: ", routeState.recordId))
+    },
+    V7117_logistics_order_tickets: {
+      list: () => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Logistics Tickets List Helper"), /* @__PURE__ */ React.createElement("p", null, "Logistics ticket list view is active.")),
+      record: (routeState) => /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel" }, /* @__PURE__ */ React.createElement("h3", null, "Logistics Ticket Record Helper"), /* @__PURE__ */ React.createElement("p", null, "Ticket Record ID: ", routeState.recordId))
+    }
+  };
+  function renderRouteStateView(routeState) {
+    const moduleViews = routeStateViews[routeState.module];
+    if (!moduleViews) {
+      return /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel route_helper_panel--empty" }, /* @__PURE__ */ React.createElement("h3", null, "No Module Helper"), /* @__PURE__ */ React.createElement("p", null, "No recognized module is currently active."));
+    }
+    const ViewRenderer = moduleViews[routeState.view];
+    if (!ViewRenderer) {
+      return /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel route_helper_panel--empty" }, /* @__PURE__ */ React.createElement("h3", null, "No View Helper"), /* @__PURE__ */ React.createElement("p", null, "No helper exists for ", routeState.module, ":", routeState.view, "."));
+    }
+    return ViewRenderer(routeState);
+  }
+  function patchBrowserHistory() {
+    if (window.__velaoneHistoryPatched) return;
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+    window.history.pushState = function(...args) {
+      const result = originalPushState.apply(this, args);
+      window.dispatchEvent(new Event(LOCATION_CHANGE_EVENT));
+      return result;
+    };
+    window.history.replaceState = function(...args) {
+      const result = originalReplaceState.apply(this, args);
+      window.dispatchEvent(new Event(LOCATION_CHANGE_EVENT));
+      return result;
+    };
+    window.__velaoneHistoryPatched = true;
+  }
   function App() {
-    return /* @__PURE__ */ React.createElement("div", { className: "App" }, /* @__PURE__ */ React.createElement("header", { className: "App-header" }, /* @__PURE__ */ React.createElement("p", null, "Edit ", /* @__PURE__ */ React.createElement("code", null, "src/App.js"), " and save. Then, refresh the page."), /* @__PURE__ */ React.createElement(
-      "a",
-      {
-        className: "App-link",
-        href: "https://reactjs.org",
-        target: "_blank",
-        rel: "noopener noreferrer"
-      },
-      "Learn React"
-    )));
+    const [routeState, dispatchRouteState] = reactExports.useReducer(
+      routeStateReducer,
+      initialRouteState
+    );
+    reactExports.useEffect(() => {
+      patchBrowserHistory();
+      const updateRouteState = () => {
+        const nextRouteState = getRouteStateFromURL();
+        dispatchRouteState({
+          type: ROUTE_ACTION.ROUTE_CHANGED,
+          payload: nextRouteState
+        });
+      };
+      updateRouteState();
+      window.addEventListener("hashchange", updateRouteState);
+      window.addEventListener("popstate", updateRouteState);
+      window.addEventListener(LOCATION_CHANGE_EVENT, updateRouteState);
+      return () => {
+        window.removeEventListener("hashchange", updateRouteState);
+        window.removeEventListener("popstate", updateRouteState);
+        window.removeEventListener(LOCATION_CHANGE_EVENT, updateRouteState);
+      };
+    }, []);
+    return /* @__PURE__ */ React.createElement("div", { className: "velaone_dashboard_overlay_app" }, /* @__PURE__ */ React.createElement("div", { className: "app_body_container" }, /* @__PURE__ */ React.createElement("p", null, "CRM Assistant"), /* @__PURE__ */ React.createElement("div", { className: "module_helper_container" }, renderRouteStateView(routeState))));
   }
   function log(...args) {
     console.log(
@@ -7021,23 +7225,71 @@
     });
   }
   log("React script has successfully started");
+  const ROOT_ID = "vela-crm-react-root";
+  const ROOT_GLOBAL_KEY = "__velaCrmReactRoot";
+  const MOUNTING_GLOBAL_KEY = "__velaCrmReactMounting";
+  function isInsideIframe() {
+    return window.self !== window.top;
+  }
+  function getExistingRootContainers() {
+    return Array.from(document.querySelectorAll(`#${ROOT_ID}`));
+  }
+  function removeDuplicateRootContainers() {
+    const containers = getExistingRootContainers();
+    if (containers.length <= 1) {
+      return containers[0] || null;
+    }
+    const [primaryContainer, ...duplicateContainers] = containers;
+    duplicateContainers.forEach((container) => {
+      container.remove();
+    });
+    log(`Removed ${duplicateContainers.length} duplicate React root container(s).`);
+    return primaryContainer;
+  }
+  function getOrCreateContainer() {
+    let container = removeDuplicateRootContainers();
+    if (!container) {
+      container = document.createElement("div");
+      container.id = ROOT_ID;
+      document.body.appendChild(container);
+      log("Created React root container.");
+    }
+    return container;
+  }
   async function main() {
-    const body = await awaitElement("body > div");
-    const container = document.createElement("div");
-    body.appendChild(container);
-    const root = clientExports.createRoot(container);
-    root.render(/* @__PURE__ */ React.createElement(App, null));
+    if (isInsideIframe()) {
+      log("Skipping React mount inside iframe.");
+      return;
+    }
+    if (window[MOUNTING_GLOBAL_KEY]) {
+      log("Mount already in progress. Skipping duplicate mount call.");
+      return;
+    }
+    window[MOUNTING_GLOBAL_KEY] = true;
+    try {
+      await awaitElement("body");
+      const container = getOrCreateContainer();
+      if (!window[ROOT_GLOBAL_KEY]) {
+        window[ROOT_GLOBAL_KEY] = clientExports.createRoot(container);
+        log("Created React root instance.");
+      }
+      window[ROOT_GLOBAL_KEY].render(/* @__PURE__ */ React.createElement(App, null));
+      log("React app rendered.");
+    } finally {
+      window[MOUNTING_GLOBAL_KEY] = false;
+    }
   }
   addLocationChangeCallback(() => {
     main().catch((e) => {
       log(e);
+      window[MOUNTING_GLOBAL_KEY] = false;
     });
   });
 })();
 ;
 (function(){
                     const el = document.createElement("style");
-                    el.innerText = "body {\n  margin: 0;\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Roboto\", \"Oxygen\",\n    \"Ubuntu\", \"Cantarell\", \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\",\n    sans-serif;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n\ncode {\n  font-family: source-code-pro, Menlo, Monaco, Consolas, \"Courier New\",\n    monospace;\n}\n.App {\n    text-align: center;\n}\n\n.App-logo {\n    height: 40vmin;\n}\n\n.App-header {\n    background-color: #282c34;\n    min-height: 100vh;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    font-size: calc(10px + 2vmin);\n    color: white;\n}\n\n.App-link {\n    color: #09d3ac;\n}\n";
+                    el.innerText = "/* body {\r\n  margin: 0;\r\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Roboto\", \"Oxygen\",\r\n    \"Ubuntu\", \"Cantarell\", \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\",\r\n    sans-serif;\r\n  -webkit-font-smoothing: antialiased;\r\n  -moz-osx-font-smoothing: grayscale;\r\n  z-index:9999;\r\n\r\n} */\r\n\r\n#vela-crm-react-root {\r\n  position: fixed;\r\n  /* right: 24px;\r\n  bottom: 24px; */\r\n  z-index: 9999;\r\n  font-family: system-ui, sans-serif;\r\n}.velaone_dashboard_overlay_app {    \r\n    position: fixed;\r\n    display: flex;\r\n    flex-direction: row;\r\n    justify-content: center;\r\n    top:0;\r\n    left:calc(100% - 500px);\r\n    width: 500px;\r\n    height: 500px;\r\n    z-index: 9999;\r\n    top: 50%;\r\n    transform: translateY(-50%);\r\n}\r\n\r\n.app_body_container {\r\n    position: relative;\r\n    width: inherit;\r\n    height: inherit;\r\n    background-color: lightskyblue;\r\n}\r\n\r\n.module_helper_container {\r\n    position: relative;\r\n    width: 100%;\r\n    height: auto;\r\n    background-color: lightgreen;\r\n}\r\n\r\n.get_address_from_account_field {\r\n    position: relative;\r\n    display:flex;\r\n    justify-content: center;\r\n    width: 165px;\r\n    height: 1.5rem;\r\n    background-color: orange;\r\n    border-radius: 5px;\r\n    cursor: pointer;\r\n\r\n    span {\r\n        align-self: center;\r\n    }\r\n}";
                     el.type = "text/css";
                     document.head.appendChild(el);
                 })();

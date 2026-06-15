@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name     React Userscripts
-// @namespace https://github.com/siefkenj/react-userscripts
+// @namespace http://tampermonkey.net/
+// @match        https://connect.vela1.com/crm/*
 // @version  1.1
-// @description A sample userscript built using react
-// @include https://*.google.com*
+// @description Loads local React overlay for SuiteCRM development
 // @grant    none
 // ==/UserScript==
 

@@ -1,13 +1,18 @@
-body {
+/* body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
     "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
+  z-index:9999;
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+} */
+
+#vela-crm-react-root {
+  position: fixed;
+  /* right: 24px;
+  bottom: 24px; */
+  z-index: 9999;
+  font-family: system-ui, sans-serif;
 }

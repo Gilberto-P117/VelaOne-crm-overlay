@@ -1,22 +1,42 @@
-.App {
-    text-align: center;
-}
-
-.App-logo {
-    height: 40vmin;
-}
-
-.App-header {
-    background-color: #282c34;
-    min-height: 100vh;
+.velaone_dashboard_overlay_app {    
+    position: fixed;
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
     justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+    top:0;
+    left:calc(100% - 500px);
+    width: 500px;
+    height: 500px;
+    z-index: 9999;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
-.App-link {
-    color: #09d3ac;
+.app_body_container {
+    position: relative;
+    width: inherit;
+    height: inherit;
+    background-color: lightskyblue;
+}
+
+.module_helper_container {
+    position: relative;
+    width: 100%;
+    height: auto;
+    background-color: lightgreen;
+}
+
+.get_address_from_account_field {
+    position: relative;
+    display:flex;
+    justify-content: center;
+    width: 165px;
+    height: 1.5rem;
+    background-color: orange;
+    border-radius: 5px;
+    cursor: pointer;
+
+    span {
+        align-self: center;
+    }
 }

@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
             minify: false,
             sourcemap: false,
             lib: {
-                entry: "userscript/src/index.tsx",
+                entry: "userscript/src/index.jsx",
                 name: "userscript",
                 fileName: (_format) => `react-userscripts.user.js`,
                 formats: ["iife"],
