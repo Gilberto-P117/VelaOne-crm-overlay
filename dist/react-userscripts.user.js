@@ -6993,15 +6993,6 @@
   const ROUTE_ACTION = {
     ROUTE_CHANGED: "ROUTE_CHANGED"
   };
-  const initialRouteState = {
-    module: null,
-    view: ROUTE_VIEW.UNKNOWN,
-    recordId: null,
-    routeModule: null,
-    returnModule: null,
-    rawPath: "",
-    rawUrl: window.location.href
-  };
   function normalizeModuleName(value) {
     if (!value) return null;
     const matchedModule = CRM_MODULES.find((moduleName) => {
@@ -7076,6 +7067,31 @@
       rawUrl: url
     };
   }
+  function patchBrowserHistory() {
+    if (window.__velaoneHistoryPatched) return;
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+    window.history.pushState = function(...args) {
+      const result = originalPushState.apply(this, args);
+      window.dispatchEvent(new Event(LOCATION_CHANGE_EVENT));
+      return result;
+    };
+    window.history.replaceState = function(...args) {
+      const result = originalReplaceState.apply(this, args);
+      window.dispatchEvent(new Event(LOCATION_CHANGE_EVENT));
+      return result;
+    };
+    window.__velaoneHistoryPatched = true;
+  }
+  const initialRouteState = {
+    module: null,
+    view: ROUTE_VIEW.UNKNOWN,
+    recordId: null,
+    routeModule: null,
+    returnModule: null,
+    rawPath: "",
+    rawUrl: window.location.href
+  };
   function routeStateReducer(state, action) {
     switch (action.type) {
       case ROUTE_ACTION.ROUTE_CHANGED: {
@@ -7112,6 +7128,7 @@
   };
   function getQuoteRelatedRecordIdsFromIframe() {
     const result = getDataIdValuesFromIframe(QUOTE_RELATED_RECORD_SELECTORS);
+    setQuotePayload(result);
     console.log(result);
   }
   const routeStateViews = {
@@ -7161,22 +7178,6 @@
       return /* @__PURE__ */ React.createElement("section", { className: "route_helper_panel route_helper_panel--empty" }, /* @__PURE__ */ React.createElement("h3", null, "No View Helper"), /* @__PURE__ */ React.createElement("p", null, "No helper exists for ", routeState.module, ":", routeState.view, "."));
     }
     return ViewRenderer(routeState);
-  }
-  function patchBrowserHistory() {
-    if (window.__velaoneHistoryPatched) return;
-    const originalPushState = window.history.pushState;
-    const originalReplaceState = window.history.replaceState;
-    window.history.pushState = function(...args) {
-      const result = originalPushState.apply(this, args);
-      window.dispatchEvent(new Event(LOCATION_CHANGE_EVENT));
-      return result;
-    };
-    window.history.replaceState = function(...args) {
-      const result = originalReplaceState.apply(this, args);
-      window.dispatchEvent(new Event(LOCATION_CHANGE_EVENT));
-      return result;
-    };
-    window.__velaoneHistoryPatched = true;
   }
   function App() {
     const [routeState, dispatchRouteState] = reactExports.useReducer(
